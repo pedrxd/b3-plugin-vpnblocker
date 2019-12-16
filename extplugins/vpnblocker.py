@@ -12,21 +12,35 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+#  05.03.2019 - v2.0.1 - ZOMBIE
+#  - Adding "iphub.info" and "proxycheck.io" and "xdefcon.com" API tokens
+#    for more protections against VPN users
+#
+#  028.11.2019 - v2.0.2 - ZOMBIE
+#  Fixing Failed connection error
 
-
-__version__ = 2.0;
-__author__ = 'pedrxd';
+__version__ = '2.0.2'
+__author__ = 'pedrxd'
 
 import b3
 import b3.events
 import b3.plugin
 
+# you have to install ipy : pip install ipy
 from IPy import IP
 import requests
 
+
 class VpnblockerPlugin(b3.plugin.Plugin):
     requiresConfigFile = False
-    apiKey = 'PUTYOURTOKENHERE'
+
+    # Visit www.proxycheck.io and create an account to get your API token
+    apiKey1 = 'past your proxycheck.io token here'
+
+    # Visit www.iphub.info and create an account to get your API token
+    apiKey2 = 'past your iphub.info token here'
+
+    # You don't need a token from xdefcon it's free anyway.
 
     def onStartup(self):
         self._adminPlugin = self.console.getPlugin('admin')
@@ -35,8 +49,10 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             self.error('Could not find admin plugin')
             return
 
-        self._adminPlugin.registerCommand(self, 'allowvpn', 80, self.cmd_allowVpn, 'av')
-        self._adminPlugin.registerCommand(self, 'denyvpn', 80, self.cmd_denyVpn, 'dv')
+        self._adminPlugin.registerCommand(
+            self, 'allowvpn', 80, self.cmd_allowVpn, 'av')
+        self._adminPlugin.registerCommand(
+            self, 'denyvpn', 80, self.cmd_denyVpn, 'dv')
 
         self.registerEvent(b3.events.EVT_CLIENT_AUTH, self.onConnect)
 
@@ -44,16 +60,17 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         client = event.client
 
         self.waitingForRegistration(client)
-        if self.byPassProtection(client) :
-            self.debug('Player {} ({}) bypassed VpnProtection'.format(client.name, client.ip))
-            return;
+        if self.byPassProtection(client):
+            self.debug('Player {} ({}) bypassed VpnProtection'.format(
+                client.name, client.ip))
+            return
 
         self.debug('Checking {} ip...'.format(client.name))
         if self.isVpn(client.ip):
             self.debug('Access denied {} ({})'.format(client.name, client.ip))
-            client.kick('Vpn is not allowed on this server')
+            client.kick('^6Proxy/VPN Detected!^7')
 
-    def cmd_denyVpn(self,data,client,cmd=None):
+    def cmd_denyVpn(self, data, client, cmd=None):
         """
         <player/ip> - Deny a player or a ip to use vpn
         """
@@ -62,7 +79,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             return
 
         argv = self._adminPlugin.parseUserCmd(data)
-        if self.validIP(argv[0]) :
+        if self.validIP(argv[0]):
             if self.removeIPQueue(argv[0]):
                 client.message('The ip has been deleted from queue')
             else:
@@ -71,7 +88,8 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             sclient = self._adminPlugin.findClientPrompt(data, client)
             if not sclient:
                 return
-            client.message('{} has been deleted from the list if exists'.format(sclient.name))
+            client.message(
+                '{} has been deleted from the list if exists'.format(sclient.name))
             self.removePlayer(sclient)
 
     def cmd_allowVpn(self, data, client, cmd=None):
@@ -83,9 +101,10 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             return
 
         argv = self._adminPlugin.parseUserCmd(data)
-        if self.validIP(argv[0]) :
+        if self.validIP(argv[0]):
             if self.addIpQueue(argv[0]):
-                client.message('The ip has been added to the list, next player with that ip will be allowed')
+                client.message(
+                    'The ip has been added to the list, next player with that ip will be allowed')
             else:
                 client.message('That ip is on the list.')
         else:
@@ -94,12 +113,9 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                 return
             if self.registerPlayer(sclient):
                 client.messasge('{} was allowed previusly')
-            else
+            else:
                 client.message('{} allowed to use vpn'.sclient.name)
 
-    # ===========================================
-    # Usefull functions for help on the main thread
-    # ===========================================
     def addIpQueue(self, ip):
         """
         Add the ip to the vpnblockwaiting table.
@@ -108,7 +124,8 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         query = "SELECT * FROM vpnblockwaiting WHERE ip='{}'".format(ip)
         s = self.console.storage.query(query)
         if s.rowcount == 0:
-            query = "INSERT INTO vpnblockwaiting VALUES (NULL, '{0}')".format(ip)
+            query = "INSERT INTO vpnblockwaiting VALUES (NULL, '{0}')".format(
+                ip)
             self.console.storage.query(query)
             return True
         return False
@@ -149,10 +166,12 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         If some player is on the waitinglist, it will be added
         Return True if register or false if nothing happend
         """
-        query = "SELECT * FROM vpnblockwaiting WHERE ip='{0}'".format(client.ip)
+        query = "SELECT * FROM vpnblockwaiting WHERE ip='{0}'".format(
+            client.ip)
         result = self.console.storage.query(query)
         if result.rowcount >= 1:
-            rmq = "DELETE FROM vpnblockwaiting WHERE ip='{0}'".format(client.ip)
+            rmq = "DELETE FROM vpnblockwaiting WHERE ip='{0}'".format(
+                client.ip)
             self.console.storage.query(rmq)
             if not self.registerPlayer(client):
                 return False
@@ -176,10 +195,32 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         Return True if is vpn and False if not
         """
         try:
-            r = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip), headers={'X-Key':self.apiKey}, timeout=1)
-            if r.status_code == 200 :
+            r = requests.get(
+                'https://api.xdefcon.com/proxy/check/?ip={}'.format(ip), timeout=3)
+            if r.status_code == 200:
                 finalRes = r.json()
-                if finalRes['block'] == 1 :
+                if finalRes['proxy'] == "true":
+                    self.debug('xdefcon found that user has proxy/vpn')
+                    return True
+        except:
+            self.debug('Connection failure??')      
+        try:            
+            r2 = requests.get(
+                'http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1), timeout=3)
+            if r2.status_code == 200:
+                finalRes2 = r2.json()
+                if finalRes2[ip]["proxy"] == "yes":
+                    self.debug('proxycheck found that user has proxy/vpn')
+                    return True      
+        except:
+            self.debug('Connection failure??')
+        try:    
+            r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip),
+                              headers={'X-Key': self.apiKey2}, timeout=3)                              
+            if r3.status_code == 200:
+                finalRes3 = r3.json()
+                if finalRes3['block'] == 1:
+                    self.debug('iphub found that user has proxy/vpn')
                     return True
         except:
             self.debug('Connection failure??')
