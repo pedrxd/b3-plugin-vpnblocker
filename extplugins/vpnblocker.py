@@ -13,11 +13,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 #  05.03.2019 - v2.0.1 - ZOMBIE
-#  - Adding "iphub.info" and "proxycheck.io" and "xdefcon.com" API tokens
+#  - Adding "proxycheck.io" and "xdefcon.com" plus "iphub.info" tokens
 #    for more protections against VPN users
 #
 #  028.11.2019 - v2.0.2 - ZOMBIE
-#  Fixing Failed connection error
+#  Fixing Connection failure.
 
 __version__ = '2.0.2'
 __author__ = 'pedrxd'
