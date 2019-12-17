@@ -199,7 +199,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                 'https://api.xdefcon.com/proxy/check/?ip={}'.format(ip), timeout=3)
             if r.status_code == 200:
                 finalRes = r.json()
-                if finalRes['proxy'] == "true":
+                if finalRes["proxy"] == "true":
                     self.debug('xdefcon detect this user using proxy/vpn')
                     return True
         except:
@@ -219,7 +219,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                               headers={'X-Key': self.apiKey2}, timeout=3)
             if r3.status_code == 200:
                 finalRes3 = r3.json()
-                if finalRes3['block'] == 1:
+                if finalRes3["block"] == 1:
                     self.debug('iphub detect this user using proxy/vpn')
                     return True
         except:
