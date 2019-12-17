@@ -200,27 +200,27 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             if r.status_code == 200:
                 finalRes = r.json()
                 if finalRes['proxy'] == "true":
-                    self.debug('xdefcon found that user has proxy/vpn')
+                    self.debug('xdefcon detect this user using proxy/vpn')
                     return True
         except:
-            self.debug('Connection failure??')      
-        try:            
+            self.debug('Connection failure??')
+        try:
             r2 = requests.get(
                 'http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1), timeout=3)
             if r2.status_code == 200:
                 finalRes2 = r2.json()
                 if finalRes2[ip]["proxy"] == "yes":
-                    self.debug('proxycheck found that user has proxy/vpn')
-                    return True      
+                    self.debug('proxycheck detect this user using proxy/vpn')
+                    return True
         except:
             self.debug('Connection failure??')
-        try:    
+        try:
             r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip),
-                              headers={'X-Key': self.apiKey2}, timeout=3)                              
+                              headers={'X-Key': self.apiKey2}, timeout=3)
             if r3.status_code == 200:
                 finalRes3 = r3.json()
                 if finalRes3['block'] == 1:
-                    self.debug('iphub found that user has proxy/vpn')
+                    self.debug('iphub detect this user using proxy/vpn')
                     return True
         except:
             self.debug('Connection failure??')
