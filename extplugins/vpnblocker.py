@@ -16,10 +16,14 @@
 #  - Adding "proxycheck.io" and "xdefcon.com" plus "iphub.info" tokens
 #    for more protections against VPN users
 #
-#  028.11.2019 - v2.0.2 - ZOMBIE
+#  28.11.2019 - v2.0.2 - ZOMBIE
 #  Fixing Connection failure.
+#
+#  05.01.2020 - v2.0.3 - ZOMBIE
+#  Fixing xdefcon.com connection failed
+#
 
-__version__ = '2.0.2'
+__version__ = '2.0.3'
 __author__ = 'pedrxd'
 
 import b3
@@ -199,7 +203,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                 'https://api.xdefcon.com/proxy/check/?ip={}'.format(ip), timeout=3)
             if r.status_code == 200:
                 finalRes = r.json()
-                if finalRes["proxy"] == "true":
+                if finalRes[ip]["proxy"] == "true":
                     self.debug('xdefcon detect this user using proxy/vpn')
                     return True
         except:
