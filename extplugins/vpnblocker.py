@@ -207,7 +207,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                     self.debug('xdefcon detect this user using proxy/vpn')
                     return True
         except:
-            self.debug('Connection failure??')
+            self.debug('Connection to xdefcon.com failed')
         try:
             r2 = requests.get(
                 'http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1), timeout=3)
@@ -217,7 +217,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                     self.debug('proxycheck detect this user using proxy/vpn')
                     return True
         except:
-            self.debug('Connection failure??')
+            self.debug('Connection to proxycheck.io failed')
         try:
             r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip),
                               headers={'X-Key': self.apiKey2}, timeout=3)
@@ -227,7 +227,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                     self.debug('iphub detect this user using proxy/vpn')
                     return True
         except:
-            self.debug('Connection failure??')
+            self.debug('Connection to iphub.info failed')
         return False
 
     def validIP(self, ip):
