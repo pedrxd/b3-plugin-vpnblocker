@@ -12,18 +12,21 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-#  05.03.2019 - v2.0.1 - ZOMBIE
+#  05.03.2019 - v2.0.1 - Zwambro
 #  - Adding "proxycheck.io" and "xdefcon.com" plus "iphub.info" tokens
 #    for more protections against VPN users
 #
-#  28.11.2019 - v2.0.2 - ZOMBIE
+#  28.11.2019 - v2.0.2 - Zwambro
 #  Fixing Connection failure.
 #
-#  05.01.2020 - v2.0.3 - ZOMBIE
+#  05.01.2020 - v2.0.3 - Zwambro
 #  Fixing xdefcon.com connection failed
 #
+#  08.05.2020 - v2.0.4 - Zwambro
+#  Check each API alone
+#
 
-__version__ = '2.0.3'
+__version__ = '2.0.4'
 __author__ = 'pedrxd'
 
 import b3
@@ -70,9 +73,20 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             return
 
         self.debug('Checking {} ip...'.format(client.name))
-        if self.isVpn(client.ip):
-            self.debug('Access denied {} ({})'.format(client.name, client.ip))
+        if self.isVpnXde(client.ip):
+            self.debug('Access denied by xdefcon for {} ({})'.format(client.name, client.ip))
             client.kick('^6Proxy/VPN Detected!^7')
+            return
+
+        elif self.isVpnProxy(client.ip):
+            self.debug('Access denied by Proxycheck for {} ({})'.format(client.name, client.ip))
+            client.kick('^6Proxy/VPN Detected!^7')
+            return
+
+        elif self.isVpnHub(client.ip):
+            self.debug('Access denied by Iphub for {} ({})'.format(client.name, client.ip))
+            client.kick('^6Proxy/VPN Detected!^7')
+            return
 
     def cmd_denyVpn(self, data, client, cmd=None):
         """
@@ -193,41 +207,55 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             return True
         return False
 
-    def isVpn(self, ip):
+    def isVpnXde(self, ip):
         """
         Check if a ip is a vpn
         Return True if is vpn and False if not
         """
         try:
             r = requests.get(
-                'https://api.xdefcon.com/proxy/check/?ip={}'.format(ip), timeout=3)
+                'https://api.xdefcon.com/proxy/check/?ip={}&vpn=1' .format(ip), timeout=2)
             if r.status_code == 200:
                 finalRes = r.json()
-                if finalRes[ip]["proxy"] == "true":
-                    self.debug('xdefcon detect this user using proxy/vpn')
+                if finalRes["proxy"] == "true":
+                    self.debug('Xdefcon db detect this ip ({}) is a VPN/Proxy' .format(ip))
                     return True
         except:
-            self.debug('Connection to xdefcon.com failed')
+            self.debug('Connection to xdefcon.com failed!!')
+        return False
+
+    def isVpnProxy(self, ip):
+        """
+        Check if a ip is a vpn
+        Return True if is vpn and False if not
+        """
         try:
             r2 = requests.get(
                 'http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1), timeout=3)
             if r2.status_code == 200:
                 finalRes2 = r2.json()
                 if finalRes2[ip]["proxy"] == "yes":
-                    self.debug('proxycheck detect this user using proxy/vpn')
+                    self.debug('proxycheck db detect this ip ({}) is a VPN/Proxy' .format(ip))
                     return True
         except:
-            self.debug('Connection to proxycheck.io failed')
+            self.debug('Connection to proxycheck.io failed!!')
+        return False
+
+    def isVpnHub(self, ip):
+        """
+        Check if a ip is a vpn
+        Return True if is vpn and False if not
+        """
         try:
             r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip),
                               headers={'X-Key': self.apiKey2}, timeout=3)
             if r3.status_code == 200:
                 finalRes3 = r3.json()
                 if finalRes3["block"] == 1:
-                    self.debug('iphub detect this user using proxy/vpn')
+                    self.debug('Iphub db detect this ip ({}) is a VPN/Proxy' .format(ip))
                     return True
         except:
-            self.debug('Connection to iphub.info failed')
+            self.debug('Connection to iphub.info failed!!')
         return False
 
     def validIP(self, ip):
