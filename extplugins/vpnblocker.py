@@ -217,7 +217,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                 'https://api.xdefcon.com/proxy/check/?ip={}&vpn=1' .format(ip), timeout=2)
             if r.status_code == 200:
                 finalRes = r.json()
-                if finalRes["proxy"] == "true":
+                if finalRes["proxy"] == True:
                     self.debug('Xdefcon db detect this ip ({}) is a VPN/Proxy' .format(ip))
                     return True
         except:
