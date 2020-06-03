@@ -25,8 +25,11 @@
 #  08.05.2020 - v2.0.4 - Zwambro
 #  Check each API alone
 #
+#  22.05.2020 - v2.0.5b - Zwambro
+#  less queries by checking only players under 50 connections.
+#  save kicked players's IP on db
 
-__version__ = '2.0.4'
+__version__ = '2.0.5b'
 __author__ = 'pedrxd'
 
 import b3
@@ -36,16 +39,17 @@ import b3.plugin
 # you have to install ipy : pip install ipy
 from IPy import IP
 import requests
+import json
 
 
 class VpnblockerPlugin(b3.plugin.Plugin):
     requiresConfigFile = False
 
     # Visit www.proxycheck.io and create an account to get your API token
-    apiKey1 = 'past your proxycheck.io token here'
+    apiKey1 = 'add proxycheck api token here'
 
     # Visit www.iphub.info and create an account to get your API token
-    apiKey2 = 'past your iphub.info token here'
+    apiKey2 = 'add iphub api token here'
 
     # You don't need a token from xdefcon it's free anyway.
 
@@ -56,10 +60,8 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             self.error('Could not find admin plugin')
             return
 
-        self._adminPlugin.registerCommand(
-            self, 'allowvpn', 80, self.cmd_allowVpn, 'av')
-        self._adminPlugin.registerCommand(
-            self, 'denyvpn', 80, self.cmd_denyVpn, 'dv')
+        self._adminPlugin.registerCommand(self, 'allowvpn', 80, self.cmd_allowVpn, 'av')
+        self._adminPlugin.registerCommand(self, 'denyvpn', 80, self.cmd_denyVpn, 'dv')
 
         self.registerEvent(b3.events.EVT_CLIENT_AUTH, self.onConnect)
 
@@ -73,19 +75,41 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             return
 
         self.debug('Checking {} ip...'.format(client.name))
-        if self.isVpnXde(client.ip):
-            self.debug('Access denied by xdefcon for {} ({})'.format(client.name, client.ip))
-            client.kick('^6Proxy/VPN Detected!^7')
-            return
 
-        elif self.isVpnProxy(client.ip):
-            self.debug('Access denied by Proxycheck for {} ({})'.format(client.name, client.ip))
-            client.kick('^6Proxy/VPN Detected!^7')
-            return
+        info = {'ip': str(client.ip)}
 
-        elif self.isVpnHub(client.ip):
-            self.debug('Access denied by Iphub for {} ({})'.format(client.name, client.ip))
-            client.kick('^6Proxy/VPN Detected!^7')
+        if client.connections < 51:
+            if self.isVpnZwa(client.ip):
+                self.debug('Access denied by Zwambro antishit for {} ({})'.format(client.name, client.ip))
+                client.kick('^6Proxy/VPN Detected!^7')
+                return
+            elif self.isVpnXde(client.ip):
+                self.addvpn(client.ip, info)
+                self.debug('Access denied by xdefcon for {} ({})'.format(client.name, client.ip))
+                client.kick('^6Proxy/VPN Detected!^7')
+                return                
+            elif self.isVpnProxy(client.ip):
+                self.addvpn(client.ip, info)
+                self.debug('Access denied by Proxycheck for {} ({})'.format(client.name, client.ip))
+                client.kick('^6Proxy/VPN Detected!^7')
+                return
+            elif self.isVpnHub(client.ip):
+                self.addvpn(client.ip, info)
+                self.debug('Access denied by Iphub for {} ({})'.format(client.name, client.ip))
+                client.kick('^6Proxy/VPN Detected!^7')
+                return
+
+            elif self.isVpnIpCom(client.ip):
+                self.addvpn(client.ip, info)
+                self.debug('Access denied by Ipinfofor {} ({})'.format(client.name, client.ip))
+                client.kick('^6Proxy/VPN Detected!^7')
+                return
+
+            else:
+                self.debug('player dont have vpn')
+                return
+        else:
+            self.debug('Player have more than 50 connections')
             return
 
     def cmd_denyVpn(self, data, client, cmd=None):
@@ -207,6 +231,22 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             return True
         return False
 
+    def isVpnZwa(self, ip):
+        """
+        Check if a ip is a vpn
+        Return True if is vpn and False if not
+        """
+        try:
+            r = requests.get('https://globanlist.zwambro.pw/checkvpn.php?ip={}' .format(ip), timeout=2)
+            if r.status_code == 200:
+                finalRes = r.json()
+                if finalRes["vpn"] == True:
+                    self.debug('Zwambro db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    return True
+        except:
+            self.debug('Connection to zwambro db failed!!')
+        return False
+
     def isVpnXde(self, ip):
         """
         Check if a ip is a vpn
@@ -257,6 +297,38 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         except:
             self.debug('Connection to iphub.info failed!!')
         return False
+
+    def isVpnIpCom(self, ip):
+        """
+        Check if a ip is a vpn
+        Return True if is vpn and False if not
+        """
+        try:
+            r4 = requests.get(
+                'http://ip-api.com/json/{}?fields=status,mobile,proxy,hosting,query' .format(ip), timeout=2)
+            if r4.status_code == 200:
+                finalRes4 = r4.json()
+                if finalRes4["proxy"] == True:
+                    self.debug('IP info db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    return True
+                elif finalRes4["hosting"] == True:
+                    self.debug('IP info db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    return True
+        except:
+            self.debug('Connection to ip.info failed!!')
+        return False
+        
+    def addvpn(self, ip, info=None):
+        try:
+            headers = {'Content-type': 'application/json'}
+            r = requests.post('https://globanlist.zwambro.pw/addvpn.php', data=json.dumps(info), headers=headers)
+            if r.status_code == 201:
+                self.debug('VPN IP added perfeclty')
+                return True
+        except ValueError, e:
+            self.debug('error: ' + e)
+            raise
+        return False        
 
     def validIP(self, ip):
         """
