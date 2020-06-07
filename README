@@ -19,9 +19,9 @@ If some player need join using a vpn or proxy, you can allow it with a simple co
 You need have installed and configurated bigbrotherbot with a mysql database.
   2.1 Merge extplugins folder with the same folder of bigbrotherbot
   2.2 Add the table inside sql folder to the b3 database
-  2.3 Go to the webpage [iphub.info](https://iphub.info/) and get free or paied token, then go to [proxycheck.io](https://proxycheck.io/). (You don't need any toekn from [xdefcon.com](https://www.xdefcon.com/) because it's free minecraft token)
+  2.3 Go to the webpage [iphub.info](https://iphub.info/) and get free or paid token, then go to [proxycheck.io](https://proxycheck.io/) and get free or paid token. (You don't need any token for [xdefcon.com](https://www.xdefcon.com/) or [ip-api.com](https://ip-api.com/))
   2.4 On the file vpnblocker.py replace the line where is 'past your proxycheck.io token here' with your **proxycheck** token, then replace the line where is 'past your iphub.info token here' with your **iphub.info** token.
-  2.5 Add the plugin to the b3.xml without any config file.
+  2.5 Add the plugin to the b3.xml with config file.
   2.6 Start b3 :D
 
 3-Commands
