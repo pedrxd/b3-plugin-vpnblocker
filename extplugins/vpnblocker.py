@@ -70,8 +70,11 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         self.registerEvent(b3.events.EVT_CLIENT_AUTH, self.onConnect)
 
     def onLoadConfig(self):
-        self._maxLevel = self.getSetting('settings', 'maxlevel', b3.LEVEL, self._maxLevel)
-
+        try:
+            self._maxLevel = self.config.get('settings', 'maxlevel')
+        except Exception, err:
+            self.error(err)
+    
     def onConnect(self, event):
         client = event.client
 
