@@ -28,8 +28,13 @@
 #  22.05.2020 - v2.0.5b - Zwambro
 #  less queries by checking only players under 50 connections.
 #  save kicked players's IP on db
+#
+#  07.06.2020 - v2.0.5 - Zwambro
+#  add vpnblocker.ini conf for 
+#  do not check players have level above than maxlevel on settings 
+#
 
-__version__ = '2.0.5b'
+__version__ = '2.0.5'
 __author__ = 'pedrxd'
 
 import b3
@@ -43,7 +48,6 @@ import json
 
 
 class VpnblockerPlugin(b3.plugin.Plugin):
-    requiresConfigFile = False
 
     # Visit www.proxycheck.io and create an account to get your API token
     apiKey1 = 'add proxycheck api token here'
@@ -65,6 +69,9 @@ class VpnblockerPlugin(b3.plugin.Plugin):
 
         self.registerEvent(b3.events.EVT_CLIENT_AUTH, self.onConnect)
 
+    def onLoadConfig(self):
+        self._maxLevel = self.getSetting('settings', 'maxlevel', b3.LEVEL, self._maxLevel)
+
     def onConnect(self, event):
         client = event.client
 
@@ -78,7 +85,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
 
         info = {'ip': str(client.ip)}
 
-        if client.connections < 51:
+        if client.maxLevel <= self._maxLevel:         
             if self.isVpnZwa(client.ip):
                 self.debug('Access denied by Zwambro antishit for {} ({})'.format(client.name, client.ip))
                 client.kick('^6Proxy/VPN Detected!^7')
@@ -101,7 +108,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
 
             elif self.isVpnIpCom(client.ip):
                 self.addvpn(client.ip, info)
-                self.debug('Access denied by Ipinfofor {} ({})'.format(client.name, client.ip))
+                self.debug('Access denied by Ipinfo for {} ({})'.format(client.name, client.ip))
                 client.kick('^6Proxy/VPN Detected!^7')
                 return
 
@@ -109,7 +116,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                 self.debug('player dont have vpn')
                 return
         else:
-            self.debug('Player have more than 50 connections')
+            self.debug('%s is a higher level user and allowed to connect' % client.name)
             return
 
     def cmd_denyVpn(self, data, client, cmd=None):
