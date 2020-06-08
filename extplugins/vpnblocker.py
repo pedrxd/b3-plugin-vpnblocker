@@ -48,6 +48,8 @@ import json
 
 
 class VpnblockerPlugin(b3.plugin.Plugin):
+    _adminPlugin = None
+    _checklevel = 2
 
     # Visit www.proxycheck.io and create an account to get your API token
     apiKey1 = 'add proxycheck api token here'
@@ -71,55 +73,58 @@ class VpnblockerPlugin(b3.plugin.Plugin):
 
     def onLoadConfig(self):
         try:
-            self._maxLevel = self.config.get('settings', 'maxlevel')
+            self._checklevel = self.config.getint('settings', 'maxlevel')
         except Exception, err:
             self.error(err)
     
     def onConnect(self, event):
         client = event.client
 
-        self.waitingForRegistration(client)
-        if self.byPassProtection(client):
-            self.debug('Player {} ({}) bypassed VpnProtection'.format(
-                client.name, client.ip))
-            return
-
         self.debug('Checking {} ip...'.format(client.name))
 
         info = {'ip': str(client.ip)}
 
-        if client.maxLevel <= self._maxLevel:         
-            if self.isVpnZwa(client.ip):
-                self.debug('Access denied by Zwambro antishit for {} ({})'.format(client.name, client.ip))
-                client.kick('^6Proxy/VPN Detected!^7')
-                return
-            elif self.isVpnXde(client.ip):
-                self.addvpn(client.ip, info)
-                self.debug('Access denied by xdefcon for {} ({})'.format(client.name, client.ip))
-                client.kick('^6Proxy/VPN Detected!^7')
-                return                
-            elif self.isVpnProxy(client.ip):
-                self.addvpn(client.ip, info)
-                self.debug('Access denied by Proxycheck for {} ({})'.format(client.name, client.ip))
-                client.kick('^6Proxy/VPN Detected!^7')
-                return
-            elif self.isVpnHub(client.ip):
-                self.addvpn(client.ip, info)
-                self.debug('Access denied by Iphub for {} ({})'.format(client.name, client.ip))
-                client.kick('^6Proxy/VPN Detected!^7')
-                return
-
-            elif self.isVpnIpCom(client.ip):
-                self.addvpn(client.ip, info)
-                self.debug('Access denied by Ipinfo for {} ({})'.format(client.name, client.ip))
-                client.kick('^6Proxy/VPN Detected!^7')
-                return
-
-            else:
-                self.debug('player dont have vpn')
-                return
+        if client.maxLevel > self._checklevel:
+            self.debug('%s is a higher level user and he will not be checked' % client.name)
+            return
         else:
-            self.debug('%s is a higher level user and allowed to connect' % client.name)
+            self.debug('%s is a lower level user and he will be checked' % client.name)
+            if client.connections > 100:
+                self.debug('%s has more than 100 connections, he cant be checked' % client.name)
+                return
+            else:
+                self.debug('%s have less than 100 connections, he will be checked now' % client.name)
+                self.waitingForRegistration(client)
+                if self.byPassProtection(client):
+                    self.debug('Player {} ({}) bypassed VpnProtection'.format(client.name, client.ip))
+                    return
+                elif self.isVpnZwa(client.ip):
+                    self.debug('Access denied by Zwambro antishit for {} ({})'.format(client.name, client.ip))
+                    client.kick('^6Proxy/VPN Detected!^7')
+                    return
+                elif self.isVpnXde(client.ip):
+                    self.addvpn(client.ip, info)
+                    self.debug('Access denied by xdefcon for {} ({})'.format(client.name, client.ip))
+                    client.kick('^6Proxy/VPN Detected!^7')
+                    return                
+                elif self.isVpnProxy(client.ip):
+                    self.addvpn(client.ip, info)
+                    self.debug('Access denied by Proxycheck for {} ({})'.format(client.name, client.ip))
+                    client.kick('^6Proxy/VPN Detected!^7')
+                    return
+                elif self.isVpnHub(client.ip):
+                    self.addvpn(client.ip, info)
+                    self.debug('Access denied by Iphub for {} ({})'.format(client.name, client.ip))
+                    client.kick('^6Proxy/VPN Detected!^7')
+                    return
+                elif self.isVpnIpCom(client.ip):
+                    self.addvpn(client.ip, info)
+                    self.debug('Access denied by Ipinfo for {} ({})'.format(client.name, client.ip))
+                    client.kick('^6Proxy/VPN Detected!^7')
+                    return
+                else:
+                    self.debug('({}) not a VPN'.format(client.ip))
+                return
             return
 
     def cmd_denyVpn(self, data, client, cmd=None):
