@@ -33,8 +33,11 @@
 #  add vpnblocker.ini conf for 
 #  do not check players have level above than maxlevel on settings 
 #
+#  10.06.2020 - v2.0.51 - Zwambro
+#  update zwambro db links
+#
 
-__version__ = '2.0.5'
+__version__ = '2.0.51'
 __author__ = 'pedrxd'
 
 import b3
@@ -68,7 +71,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
 
         self._adminPlugin.registerCommand(self, 'allowvpn', 80, self.cmd_allowVpn, 'av')
         self._adminPlugin.registerCommand(self, 'denyvpn', 80, self.cmd_denyVpn, 'dv')
-
+        
         self.registerEvent(b3.events.EVT_CLIENT_AUTH, self.onConnect)
 
     def onLoadConfig(self):
@@ -99,7 +102,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                     self.debug('Player {} ({}) bypassed VpnProtection'.format(client.name, client.ip))
                     return
                 elif self.isVpnZwa(client.ip):
-                    self.debug('Access denied by Zwambro antishit for {} ({})'.format(client.name, client.ip))
+                    self.debug('Access denied by Zwambro db for {} ({})'.format(client.name, client.ip))
                     client.kick('^6Proxy/VPN Detected!^7')
                     return
                 elif self.isVpnXde(client.ip):
@@ -169,10 +172,10 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             if not sclient:
                 return
             if self.registerPlayer(sclient):
-                client.messasge('{} was allowed previusly')
+                client.messasge('{} was allowed previusly'.sclient.name)
             else:
                 client.message('{} allowed to use vpn'.sclient.name)
-
+                
     def addIpQueue(self, ip):
         """
         Add the ip to the vpnblockwaiting table.
@@ -252,7 +255,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         Return True if is vpn and False if not
         """
         try:
-            r = requests.get('https://globanlist.zwambro.pw/checkvpn.php?ip={}' .format(ip), timeout=2)
+            r = requests.get('https://antivpn.zwambro.pw/checkip.php?ip={}' .format(ip), timeout=2)
             if r.status_code == 200:
                 finalRes = r.json()
                 if finalRes["vpn"] == True:
@@ -336,7 +339,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
     def addvpn(self, ip, info=None):
         try:
             headers = {'Content-type': 'application/json'}
-            r = requests.post('https://globanlist.zwambro.pw/addvpn.php', data=json.dumps(info), headers=headers)
+            r = requests.post('https://antivpn.zwambro.pw/addvpn.php', data=json.dumps(info), headers=headers)
             if r.status_code == 201:
                 self.debug('VPN IP added perfeclty')
                 return True
