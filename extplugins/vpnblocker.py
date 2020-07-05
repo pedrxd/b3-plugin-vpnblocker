@@ -52,7 +52,7 @@ import json
 
 class VpnblockerPlugin(b3.plugin.Plugin):
     _adminPlugin = None
-    _checklevel = 2
+    _checklevel = 1
 
     # Visit www.proxycheck.io and create an account to get your API token
     apiKey1 = 'add proxycheck api token here'
