@@ -30,14 +30,18 @@
 #  save kicked players's IP on db
 #
 #  07.06.2020 - v2.0.5 - Zwambro
-#  add vpnblocker.ini conf for 
-#  do not check players have level above than maxlevel on settings 
+#  add vpnblocker.ini conf for
+#  do not check players have level above than maxlevel on settings
 #
 #  10.06.2020 - v2.0.51 - Zwambro
 #  update zwambro db links
 #
+#  27.02.2021 - v2.1.0 - Zwambro
+#  updating zwambro db links
+#  add zwamro api token for more security
+#
 
-__version__ = '2.0.51'
+__version__ = '2.1.0'
 __author__ = 'pedrxd'
 
 import b3
@@ -55,10 +59,13 @@ class VpnblockerPlugin(b3.plugin.Plugin):
     _checklevel = 1
 
     # Visit www.proxycheck.io and create an account to get your API token
-    apiKey1 = 'add proxycheck api token here'
+    apiKey1 = 'past your proxycheck.io token here'
 
     # Visit www.iphub.info and create an account to get your API token
-    apiKey2 = 'add iphub api token here'
+    apiKey2 = 'past your iphub.info token here'
+
+    # ask Zwambro#8854 if you want a token
+    apiKey3 = "past your zwmabro.pw token here"
 
     # You don't need a token from xdefcon it's free anyway.
 
@@ -71,15 +78,17 @@ class VpnblockerPlugin(b3.plugin.Plugin):
 
         self._adminPlugin.registerCommand(self, 'allowvpn', 80, self.cmd_allowVpn, 'av')
         self._adminPlugin.registerCommand(self, 'denyvpn', 80, self.cmd_denyVpn, 'dv')
-        
+
         self.registerEvent(b3.events.EVT_CLIENT_AUTH, self.onConnect)
+
 
     def onLoadConfig(self):
         try:
             self._checklevel = self.config.getint('settings', 'maxlevel')
         except Exception, err:
             self.error(err)
-    
+
+
     def onConnect(self, event):
         client = event.client
 
@@ -88,47 +97,57 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         info = {'ip': str(client.ip)}
 
         if client.maxLevel > self._checklevel:
-            self.debug('%s is a higher level user and he will not be checked' % client.name)
+            self.debug("%s is a higher level user, he can't be checked" % client.name)
             return
+
         else:
-            self.debug('%s is a lower level user and he will be checked' % client.name)
+            self.debug('%s is a lower level user, checking his ip ...' % client.name)
+
             if client.connections > 100:
-                self.debug('%s has more than 100 connections, he cant be checked' % client.name)
+                self.debug('%s has more than 100 connections, it seems a trusted playeer, he cant be checked' % client.name)
                 return
+
             else:
-                self.debug('%s have less than 100 connections, he will be checked now' % client.name)
+                self.debug('%s have less than 100 connections, we will check his ip now ... ' % client.name)
+
                 self.waitingForRegistration(client)
+
                 if self.byPassProtection(client):
                     self.debug('Player {} ({}) bypassed VpnProtection'.format(client.name, client.ip))
                     return
+
                 elif self.isVpnZwa(client.ip):
                     self.debug('Access denied by Zwambro db for {} ({})'.format(client.name, client.ip))
                     client.kick('^6Proxy/VPN Detected!^7')
                     return
+
                 elif self.isVpnXde(client.ip):
                     self.addvpn(client.ip, info)
                     self.debug('Access denied by xdefcon for {} ({})'.format(client.name, client.ip))
                     client.kick('^6Proxy/VPN Detected!^7')
-                    return                
+                    return
+
                 elif self.isVpnProxy(client.ip):
                     self.addvpn(client.ip, info)
                     self.debug('Access denied by Proxycheck for {} ({})'.format(client.name, client.ip))
                     client.kick('^6Proxy/VPN Detected!^7')
                     return
+
                 elif self.isVpnHub(client.ip):
                     self.addvpn(client.ip, info)
                     self.debug('Access denied by Iphub for {} ({})'.format(client.name, client.ip))
                     client.kick('^6Proxy/VPN Detected!^7')
                     return
+
                 elif self.isVpnIpCom(client.ip):
                     self.addvpn(client.ip, info)
                     self.debug('Access denied by Ipinfo for {} ({})'.format(client.name, client.ip))
                     client.kick('^6Proxy/VPN Detected!^7')
                     return
+
                 else:
                     self.debug('({}) not a VPN'.format(client.ip))
-                return
-            return
+
 
     def cmd_denyVpn(self, data, client, cmd=None):
         """
@@ -175,7 +194,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                 client.messasge('{} was allowed previusly'.sclient.name)
             else:
                 client.message('{} allowed to use vpn'.sclient.name)
-                
+
     def addIpQueue(self, ip):
         """
         Add the ip to the vpnblockwaiting table.
@@ -255,11 +274,11 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         Return True if is vpn and False if not
         """
         try:
-            r = requests.get('https://antivpn.zwambro.pw/checkip.php?ip={}' .format(ip), timeout=2)
+            r = requests.get('https://zwambro.pw/antivpn/checkvpn?ip={}' .format(ip), headers={'Authorization': 'Token ' + self.apiKey3 + ''}, timeout=2)
             if r.status_code == 200:
                 finalRes = r.json()
                 if finalRes["vpn"] == True:
-                    self.debug('Zwambro db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    self.debug('Zwambro db detect this ip ({}) a VPN/Proxy' .format(ip))
                     return True
         except:
             self.debug('Connection to zwambro db failed!!')
@@ -271,12 +290,11 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         Return True if is vpn and False if not
         """
         try:
-            r = requests.get(
-                'https://api.xdefcon.com/proxy/check/?ip={}&vpn=1' .format(ip), timeout=2)
+            r = requests.get('https://api.xdefcon.com/proxy/check/?ip={}&vpn=1' .format(ip), timeout=2)
             if r.status_code == 200:
                 finalRes = r.json()
                 if finalRes["proxy"] == True:
-                    self.debug('Xdefcon db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    self.debug('Xdefcon db detect this ip ({}) a VPN/Proxy' .format(ip))
                     return True
         except:
             self.debug('Connection to xdefcon.com failed!!')
@@ -288,12 +306,11 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         Return True if is vpn and False if not
         """
         try:
-            r2 = requests.get(
-                'http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1), timeout=3)
+            r2 = requests.get('http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1), timeout=3)
             if r2.status_code == 200:
                 finalRes2 = r2.json()
                 if finalRes2[ip]["proxy"] == "yes":
-                    self.debug('proxycheck db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    self.debug('proxycheck db detect this ip ({}) a VPN/Proxy' .format(ip))
                     return True
         except:
             self.debug('Connection to proxycheck.io failed!!')
@@ -305,12 +322,11 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         Return True if is vpn and False if not
         """
         try:
-            r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip),
-                              headers={'X-Key': self.apiKey2}, timeout=3)
+            r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip), headers={'X-Key': self.apiKey2}, timeout=3)
             if r3.status_code == 200:
                 finalRes3 = r3.json()
                 if finalRes3["block"] == 1:
-                    self.debug('Iphub db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    self.debug('Iphub db detect this ip ({}) a VPN/Proxy' .format(ip))
                     return True
         except:
             self.debug('Connection to iphub.info failed!!')
@@ -322,31 +338,26 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         Return True if is vpn and False if not
         """
         try:
-            r4 = requests.get(
-                'http://ip-api.com/json/{}?fields=status,mobile,proxy,hosting,query' .format(ip), timeout=2)
+            r4 = requests.get('http://ip-api.com/json/{}?fields=status,mobile,proxy,hosting,query' .format(ip), timeout=2)
             if r4.status_code == 200:
                 finalRes4 = r4.json()
                 if finalRes4["proxy"] == True:
-                    self.debug('IP info db detect this ip ({}) is a VPN/Proxy' .format(ip))
-                    return True
-                elif finalRes4["hosting"] == True:
-                    self.debug('IP info db detect this ip ({}) is a VPN/Proxy' .format(ip))
+                    self.debug('IP info db detect this ip ({}) a VPN/Proxy' .format(ip))
                     return True
         except:
             self.debug('Connection to ip.info failed!!')
         return False
-        
+
     def addvpn(self, ip, info=None):
         try:
-            headers = {'Content-type': 'application/json'}
-            r = requests.post('https://antivpn.zwambro.pw/addvpn.php', data=json.dumps(info), headers=headers)
+            headers = {'Content-type': 'application/json', 'Authorization': 'Token ' + self.apiKey3 + ''}
+            r = requests.post('https://zwambro.pw/antivpn/addvpn', data=json.dumps(info), headers=headers)
             if r.status_code == 201:
                 self.debug('VPN IP added perfeclty')
                 return True
-        except ValueError, e:
-            self.debug('error: ' + e)
-            raise
-        return False        
+        except:
+            self.debug('Something happened !!')
+        return False
 
     def validIP(self, ip):
         """
