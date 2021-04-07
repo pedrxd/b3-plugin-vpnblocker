@@ -18,11 +18,12 @@ If some player need join using a vpn or proxy, you can allow it with a simple co
 You need have installed and configurated bigbrotherbot with a mysql database.
 **IPy is required**
 1. **Merge extplugins** folder with the same folder of bigbrotherbot
-2. Add the **vpnblock.sql** inside sql folder to the b3 database
-3. Go to the webpage [iphub.info](https://iphub.info/) and get free or paid token, then go to [proxycheck.io](https://proxycheck.io/) and get free or paid token. for [xdefcon.com](https://www.xdefcon.com/) you don't need a token. But for zwambro DB you need a token (contact mee on discord `Zwambro#8854` to create api for your clan).
-4. On the file vpnblocker.py **replace** the line where is `'past your proxycheck.io token here'` with your **proxycheck** token, then replace the line where is `'past your iphub.info token here'` with your **iphub.info** token, then replace the line where is `'past your zwmabro.pw token here'` with your **Zwambro.pw** token
- 5. Add the plugin to the **b3.xml** without any config file.
- 6. Start b3 :D
+2. Install ipy : `pip install ipy`
+3. Add the **vpnblock.sql** inside sql folder to the b3 database
+4. Go to the webpage [iphub.info](https://iphub.info/) and get free or paid token, then go to [proxycheck.io](https://proxycheck.io/) and get free or paid token. for [xdefcon.com](https://www.xdefcon.com/) you don't need a token. But for zwambro DB you need a token (contact me on discord `Zwambro#8854` to create an api for your clan).
+5. On the config file `vpnblocker.ini` copy your **proxycheck** and **iphub.info** and **zwambrodb** tokens.
+6. Add the plugin to the **b3.xml** : `<plugin name="vpnblocker" config="@b3/extplugins/conf/vpnblocker.ini"/>`
+7. Start b3 :D
 
 ## Commands
 All comands that include this plugins are listed bellow:
