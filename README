@@ -17,12 +17,14 @@ If some player need join using a vpn or proxy, you can allow it with a simple co
 
 2-Installation
 You need have installed and configurated bigbrotherbot with a mysql database.
-  2.1 Merge extplugins folder with the same folder of bigbrotherbot
-  2.2 Add the table inside sql folder to the b3 database
-  2.3 Go to the webpage [iphub.info](https://iphub.info/) and get free or paid token, then go to [proxycheck.io](https://proxycheck.io/) and get free or paid token. (You don't need any token for [xdefcon.com](https://www.xdefcon.com/) or [ip-api.com](https://ip-api.com/))
-  2.4 On the file vpnblocker.py replace the line where is 'past your proxycheck.io token here' with your **proxycheck** token, then replace the line where is 'past your iphub.info token here' with your **iphub.info** token.
-  2.5 Add the plugin to the b3.xml with config file.
-  2.6 Start b3 :D
+  2.1 Install IPY 'pip install ipy'
+  2.2 Merge extplugins folder with the same folder of bigbrotherbot
+  2.3 Past conf file to 'explugins/conf/'
+  2.4 Add the table inside sql folder to the b3 database
+  2.5 Go to the webpage [iphub.info](https://iphub.info/) and get free or paid token, then go to [proxycheck.io](https://proxycheck.io/) and get free or paid token. (You don't need any token for [xdefcon.com](https://www.xdefcon.com/) or [ip-api.com](https://ip-api.com/))
+  2.6 On the config file 'vpnblocker.ini' copy your **proxycheck** and **iphub.info** and **zwambrodb** tokens.
+  2.7 Add the plugin to the b3.xml with config file: '<plugin name="vpnblocker" config="@b3/extplugins/conf/vpnblocker.ini"/>'
+  2.8 Start b3 :D
 
 3-Commands
 All comands that include this plugins are listed bellow:
