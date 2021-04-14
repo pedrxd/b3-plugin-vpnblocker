@@ -43,8 +43,12 @@
 #  03.04.2021 - v2.1.1 - Zwambro
 #  add config file
 #
+#  10.04.2021 - v2.1.11 - Zwambro
+#  add a custom User-Agent header for xdefcon DB
+#  fix command unrecognized error
+#  add max connections option to config
 
-__version__ = '2.1.1'
+__version__ = '2.1.11'
 __author__ = 'pedrxd'
 
 import b3
@@ -56,12 +60,15 @@ from b3.functions import getCmd
 from IPy import IP
 import requests
 import json
+import uuid
 
 
 class VpnblockerPlugin(b3.plugin.Plugin):
 
     _adminPlugin = None
     _checklevel = 1
+    _maxConnections = 100
+    serverId = ""
     apiKey1 = ""
     apiKey2 = ""
     apiKey3 = ""
@@ -90,13 +97,19 @@ class VpnblockerPlugin(b3.plugin.Plugin):
 
         self.registerEvent(b3.events.EVT_CLIENT_AUTH, self.onConnect)
 
+        #prepare user-agent
+        hostIp= str(self.console._publicIp)
+        HostPort= str(self.console._port)
+        spr = '%s:%s' %(hostIp, HostPort)
+        self.serverId = str(uuid.uuid5(uuid.NAMESPACE_DNS, spr))
+
     def onLoadConfig(self):
         try:
             self._checklevel = self.config.getint('settings', 'maxlevel')
+            self._maxConnections = self.config.getint('settings', 'maxconnactions')
             self.apiKey1 = self.getSetting('settings', 'proxycheck.io', b3.STR, self.apiKey1)
             self.apiKey2 = self.getSetting('settings', 'iphub.info', b3.STR, self.apiKey2)
             self.apiKey3 = self.getSetting('settings', 'zwambro.pw', b3.STR, self.apiKey3)
-
         except Exception, err:
             self.error(err)
 
@@ -114,12 +127,12 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         else:
             self.debug('%s is a lower level user, checking his ip ...' %client.name)
 
-            if client.connections > 100:
-                self.debug('%s has more than 100 connections, it seems a trusted playeer, he cant be checked' % client.name)
+            if client.connections > self._maxConnections:
+                self.debug('%s has more than %s connections, not affected by the plugin' % (client.name, self._maxConnections))
                 return
 
             else:
-                self.debug('%s have less than 100 connections, we will check his ip now ... ' % client.name)
+                self.debug('%s have less than %s connections, we will check his ip now ... ' % (client.name, self._maxConnections))
 
                 self.waitingForRegistration(client)
 
@@ -159,7 +172,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
                 else:
                     self.debug('({}) not a VPN'.format(client.ip))
 
-    def cmd_denyVpn(self, data, client, cmd=None):
+    def cmd_denyvpn(self, data, client, cmd=None):
         """
         <player/ip> - Deny a player or a ip to use vpn
         """
@@ -180,7 +193,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
             client.message('{} has been deleted from the list if exists'.format(sclient.name))
             self.removePlayer(sclient)
 
-    def cmd_allowVpn(self, data, client, cmd=None):
+    def cmd_allowvpn(self, data, client, cmd=None):
         """
         <player/ip> - Allow a player or a ip to use vpn
         """
@@ -252,12 +265,10 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         If some player is on the waitinglist, it will be added
         Return True if register or false if nothing happend
         """
-        query = "SELECT * FROM vpnblockwaiting WHERE ip='{0}'".format(
-            client.ip)
+        query = "SELECT * FROM vpnblockwaiting WHERE ip='{0}'".format(client.ip)
         result = self.console.storage.query(query)
         if result.rowcount >= 1:
-            rmq = "DELETE FROM vpnblockwaiting WHERE ip='{0}'".format(
-                client.ip)
+            rmq = "DELETE FROM vpnblockwaiting WHERE ip='{0}'".format(client.ip)
             self.console.storage.query(rmq)
             if not self.registerPlayer(client):
                 return False
@@ -282,7 +293,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         """
         self.debug("checking Zwambro DB")
         try:
-            r = requests.get('https://zwambro.pw/antivpn/checkvpn?ip={}' .format(ip), headers={'Authorization': 'Token {}' .format(self.apiKey3)}, timeout=2)
+            r = requests.get('https://zwambro.pw/antivpn/checkvpn?ip={}' .format(ip), headers={'Authorization': 'Token {}' .format(self.apiKey3.strip())}, timeout=2)
             if r.status_code == 200:
                 finalRes = r.json()
                 if finalRes["vpn"] == True:
@@ -299,7 +310,8 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         """
         self.debug("checking xdefcon DB")
         try:
-            r = requests.get('https://api.xdefcon.com/proxy/check/?ip={}&vpn=1' .format(ip), timeout=2)
+            headers = {"User-Agent": "{}" .format(self.serverId)}
+            r = requests.get('https://api.xdefcon.com/proxy/check/?ip={}&vpn=1' .format(ip), headers, timeout=2)
             if r.status_code == 200:
                 finalRes = r.json()
                 if finalRes["proxy"] == True:
@@ -316,7 +328,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         """
         self.debug("checking proxycheck DB")
         try:
-            r2 = requests.get('http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1), timeout=3)
+            r2 = requests.get('http://proxycheck.io/v2/{}?key={}&vpn=1' .format(ip, self.apiKey1.strip()), timeout=3)
             if r2.status_code == 200:
                 finalRes2 = r2.json()
                 if finalRes2[ip]["proxy"] == "yes":
@@ -333,7 +345,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
         """
         self.debug("checking iphub DB")
         try:
-            r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip), headers={'X-Key': self.apiKey2}, timeout=3)
+            r3 = requests.get('http://v2.api.iphub.info/ip/{}'.format(ip), headers={'X-Key': self.apiKey2.strip()}, timeout=3)
             if r3.status_code == 200:
                 finalRes3 = r3.json()
                 if finalRes3["block"] == 1:
@@ -363,7 +375,7 @@ class VpnblockerPlugin(b3.plugin.Plugin):
     def zwamBroAddVpn(self, ip, info=None):
         self.debug("adding VPN to zwambro DB")
         try:
-            headers = {'Content-type': 'application/json', 'Authorization': 'Token ' + self.apiKey3 + ''}
+            headers = {'Content-type': 'application/json', 'Authorization': 'Token {}' .format(self.apiKey3.strip())}
             r = requests.post('https://zwambro.pw/antivpn/addvpn', data=json.dumps(info), headers=headers)
             if r.status_code == 201:
                 self.debug('VPN IP added perfeclty')
