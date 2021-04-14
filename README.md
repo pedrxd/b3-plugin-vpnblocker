@@ -33,3 +33,5 @@ All comands that include this plugins are listed bellow:
 If you add a ip the nextplayer connected with that ip will be allowed to connect using vpn.
 **If you deny a ip only IP's not assinged to a player will be removed**
 
+### Special thanks and acknowledgements
+- DANGER clan's Owner `𝔻𝔾 |*𝕎𝕒ℝ*|#4315` for bugreports and testing
